@@ -1,41 +1,31 @@
-name: Deploy WordPress to Bitnami on Lightsail
+name: Deploy WordPress to Lightsail
 
 on:
   push:
     branches:
-      - main # Triggers the action when you push to the 'main' branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Deploy to Lightsail via SSH
-        uses: appleboy/ssh-action@v1.0.0
+      
+      - name: Deploy to Lightsail
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            # Navigate to the Bitnami WordPress directory
             cd /opt/bitnami/wordpress
-
-            # Pull the latest code from your repository
-            # This command requires Git to be installed on the server
             git pull origin main
-
-            # --- Permission Fixes (Crucial for Bitnami) ---
-            # After pulling new code, ensure all files have the correct owner and permissions
             sudo chown -R bitnami:daemon /opt/bitnami/wordpress
             sudo find /opt/bitnami/wordpress -type d -exec chmod 755 {} \;
             sudo find /opt/bitnami/wordpress -type f -exec chmod 644 {} \;
-            sudo chmod -R 775 /opt/bitnami/wordpress/wp-content
-
-            # Restart PHP and the web server to clear any cache
-            sudo /opt/bitnami/ctlscript.sh restart php-fpm
             sudo /opt/bitnami/ctlscript.sh restart apache
-
-            echo "Deployment to Lightsail completed successfully!"
+            sudo /opt/bitnami/ctlscript.sh restart php-fpm
+            echo "✅ WordPress deployed successfully!"
